@@ -1,0 +1,16 @@
+body {
+    padding: 0;
+    margin: 0;
+    background-color: black;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4em;
+    justify-content: center;
+    height: 100vh;
+}
+
+#output-box {
+    height: 250px;
+}
