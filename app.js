@@ -33,39 +33,66 @@ const input = document.querySelector("#search");
 const output = document.querySelector("#output-box");
 
 let citySearched = "";
+let cityFound = "";
 
 input.addEventListener('keydown', (event) => {
     if (event.key === "Enter") {
         if (input.value.trim() === "") return;
-        getCoordinates(input.value.trim());
+        getCoordinatesByCity(input.value.trim())
+            .then(result => {
+                cityFound = result.results[0].name
+                getCurrentWeather(result.results[0].latitude, result.results[0].longitude)
+                    .then(temperatureData => {
+                        output.textContent = 
+                            `The current temperature in ${cityFound} is ${temperatureData.current.temperature_2m}°C and it's ${weatherCodes[temperatureData.current.weather_code]}`
+                    })
+                    .catch(err => {
+                        console.log(err)
+                    })
+            })
+            .catch(err => {
+                console.log(err);
+            })
         citySearched = input.value.trim()
         input.value = "";
     }
 })
 
-async function getCoordinates(city) {
-    let coordinateUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${city}&language=en&format=json`
 
-    try {
-        let response = await fetch(coordinateUrl);
-        if (!response.ok) throw Error(response.status);
-        let data = await response.json();
-        if (!data.results) output.textContent = "city not found"
-        getCurrentTemperature(data.results[0].latitude, data.results[0].longitude)
-    } catch(error) {
-        console.log(error);
-    }
+function getCoordinatesByCity(city) {
+    return new Promise((resolve, reject) => {
+        let coordinatesUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${city}&language=en&format=json`
+        fetch(coordinatesUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                resolve(data);
+            })
+            .catch(error => {
+                reject(error);
+            });
+    });
 }
 
-async function getCurrentTemperature(lat, long){
-    let temperatureUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${long}&current=temperature_2m,weather_code`
-
-    try {
-        let response = await fetch(temperatureUrl);
-        if (!response.ok) throw Error(response.status);
-        let data = await response.json();
-        output.textContent = `The current temperature in ${citySearched} is ${data.current.temperature_2m}°C and it's ${weatherCodes[data.current.weather_code]}`
-    } catch(error) {
-        console.log(error)
-    }
+function getCurrentWeather(lat, lon) {
+    return new Promise((resolve, reject) => {
+        let temperatureUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`
+        fetch(temperatureUrl)
+            .then(response => {
+                if(!response.ok) {
+                    throw new Error(`HTTP error. status: ${response.status}`);
+                }
+                return response.json()
+            })
+            .then(data => {
+                resolve(data)
+            })
+            .catch(error => {
+                reject(error)
+            });
+    });
 }
